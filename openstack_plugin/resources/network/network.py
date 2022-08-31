@@ -55,6 +55,16 @@ def create(openstack_resource):
     created_resource = openstack_resource.create()
     ctx.instance.runtime_properties[RESOURCE_ID] = created_resource.id
 
+@with_compat_node
+@with_openstack_resource(OpenstackNetwork)
+def poststart(openstack_resource):
+    """
+    Get qurrent status of openstack network for check_drift
+    :param openstack_resource: instance of openstack network resource
+    """
+    resource = openstack_resource.get()
+    ctx.logger.info(resource)
+
 
 @with_compat_node
 @with_openstack_resource(OpenstackNetwork)
