@@ -1174,3 +1174,113 @@ def setup_openstack_logging(client_config, logger):
         if is_str:
             logger_level = logger_level.upper()
         setup_logging(logger_name, [ctx_log_handler], logger_level)
+
+
+class JsonCleanuper(object):
+
+    def __init__(self, ob):
+        try:
+            resource = ob.to_dict()
+        except AttributeError:
+            resource = ob
+
+        if isinstance(resource, list):
+            self._cleanuped_list(resource)
+        elif isinstance(resource, dict):
+            self._cleanuped_dict(resource)
+
+        self.value = resource
+
+    def _cleanuped_list(self, resource):
+        for k, v in enumerate(resource):
+            if not v:
+                continue
+            if isinstance(v, list):
+                self._cleanuped_list(v)
+            elif isinstance(v, dict):
+                self._cleanuped_dict(v)
+            elif (not isinstance(v, int) and  # integer and bool
+                  not isinstance(v, text_type)):
+                resource[k] = text_type(v)
+
+    def _cleanuped_dict(self, resource):
+        for k in resource:
+            if not resource[k]:
+                continue
+            if isinstance(resource[k], list):
+                self._cleanuped_list(resource[k])
+            elif isinstance(resource[k], dict):
+                self._cleanuped_dict(resource[k])
+            elif (not isinstance(resource[k], int) and  # integer and bool
+                  not isinstance(resource[k], text_type)):
+                resource[k] = text_type(resource[k])
+
+    def to_dict(self):
+        return self.value
+
+
+def assign_parameter(openstack_resource, param_name, runtime_props, prop):
+    prop = prop or {}
+    ctx.logger.debug("Runtime_props type: {}".format(type(runtime_props)))
+
+    if prop:
+        runtime_props[param_name] = JsonCleanuper(prop).to_dict()  # noqa
+    elif isinstance(runtime_props, dict):
+        prop = JsonCleanuper(runtime_props.get(param_name)).to_dict()
+    setattr(openstack_resource, param_name, prop)
+
+
+def assign_remote_configuration(openstack_resource,
+                                runtime_props,
+                                prop=None):
+    prop = prop or {}
+    assign_parameter(openstack_resource,
+                     'remote_configuration',
+                     runtime_props,
+                     prop)
+
+
+def assign_expected_configuration(openstack_resource,
+                                  runtime_props,
+                                  prop=None):
+    prop = prop or {}
+    assign_parameter(openstack_resource,
+                     'expected_configuration',
+                     runtime_props,
+                     prop)
+
+
+def update_expected_configuration(openstack_resource, runtime_props):
+    assign_expected_configuration(openstack_resource,
+                                  runtime_props)
+
+
+def update_remote_configuration(openstack_resource, runtime_props):
+    assign_remote_configuration(openstack_resource,
+                                runtime_props)
+
+
+def check_drift(logger, openstack_resource):
+    logger.info(
+        'Checking drift state for {resource_id}.'.format(
+            resource_id=openstack_resource.resource_id))
+
+    update_expected_configuration(openstack_resource,
+                                  ctx.instance.runtime_properties)
+    update_remote_configuration(openstack_resource,
+                                ctx.instance.runtime_properties)
+
+    result = openstack_resource.compare_configuration()
+    if result:
+        logger.error(
+            'Configuration has drifts: {res}.'.format(
+                res=result))
+        logger.error('Expected configuration: {}'.format(
+            openstack_resource.expected_configuration))
+        logger.error('Remote configuration: {}'.format(
+            openstack_resource.remote_configuration))
+        return result
+    logger.info(
+        'The {resource_id} configuration has not drifted.'.format(
+            resource_id=openstack_resource.resource_id))
+    return None

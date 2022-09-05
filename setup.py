@@ -49,7 +49,8 @@ setup(
         'openstacksdk==0.53.0',
         'IPy==0.81',
         'pycryptodome>=3.9.8,<3.10',
-        'python-manilaclient==2.0.0'
+        'python-manilaclient==2.0.0',
+        'deepdiff==3.3.0'
     ],
     test_requires=[
         'mock',

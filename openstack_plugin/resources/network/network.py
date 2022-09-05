@@ -18,6 +18,7 @@ from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 
 # Local imports
+from openstack_plugin import utils
 from openstack_sdk.resources.networks import OpenstackNetwork
 from openstack_plugin.decorators import (with_openstack_resource,
                                          with_compat_node)
@@ -55,6 +56,7 @@ def create(openstack_resource):
     created_resource = openstack_resource.create()
     ctx.instance.runtime_properties[RESOURCE_ID] = created_resource.id
 
+
 @with_compat_node
 @with_openstack_resource(OpenstackNetwork)
 def poststart(openstack_resource):
@@ -62,8 +64,8 @@ def poststart(openstack_resource):
     Get qurrent status of openstack network for check_drift
     :param openstack_resource: instance of openstack network resource
     """
-    resource = openstack_resource.get()
-    ctx.logger.info(resource)
+    ctx.instance.runtime_properties['expected_configuration'] = \
+        openstack_resource.get()
 
 
 @with_compat_node
@@ -111,3 +113,16 @@ def creation_validation(openstack_resource):
     """
     validate_resource_quota(openstack_resource, NETWORK_OPENSTACK_TYPE)
     ctx.logger.debug('OK: network configuration is valid')
+
+
+@with_compat_node
+@with_openstack_resource(OpenstackNetwork)
+def check_drift(openstack_resource):
+    """
+    This method is to check drift of configuration
+    :param openstack_resource: Instance of current openstack network
+    """
+    ctx.instance.runtime_properties['remote_configuration'] = \
+        openstack_resource.get()
+    ctx.instance.update()
+    return utils.check_drift(ctx.logger, openstack_resource)

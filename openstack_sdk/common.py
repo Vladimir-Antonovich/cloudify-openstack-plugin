@@ -19,6 +19,10 @@ import uuid
 # Third party imports
 import openstack
 import openstack.exceptions
+from deepdiff import DeepDiff
+
+# Local imports
+from openstack_plugin import utils
 
 # Py2/3 compatibility
 from openstack_sdk._compat import text_type
@@ -50,6 +54,8 @@ class OpenstackResource(object):
         self.resource_id =\
             None if 'id' not in self.config else self.config['id']
         self.validate_keystone_v3()
+        self._remote_configuration = None  # Describe Result
+        self._expected_configuration = None  # Current extrapolation
 
     def __str__(self):
         return self.name if not self.resource_id else self.resource_id
@@ -180,6 +186,35 @@ class OpenstackResource(object):
 
     def delete(self):
         raise NotImplementedError()
+
+    def compare_configuration(self):
+        return DeepDiff(self.expected_configuration,
+                        self.remote_configuration)
+
+    @property
+    def expected_configuration(self):
+        """This is the expected configuration.
+        It should be the last modification made to the resource.
+        """
+        return utils.JsonCleanuper(
+            self._expected_configuration).to_dict() or {}
+
+    @expected_configuration.setter
+    def expected_configuration(self, value):
+        self._expected_configuration = utils.JsonCleanuper(value).to_dict()
+
+    @property
+    def remote_configuration(self):
+        """This is the current remote configuration. It is only used in
+        compare_configuration.
+        :return:
+        """
+        return utils.JsonCleanuper(
+            self._remote_configuration).to_dict() or {}
+
+    @remote_configuration.setter
+    def remote_configuration(self, value):
+        self._remote_configuration = utils.JsonCleanuper(value).to_dict()
 
 
 class ResourceMixin(object):

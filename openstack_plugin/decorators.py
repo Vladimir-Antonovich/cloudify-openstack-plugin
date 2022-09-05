@@ -107,7 +107,14 @@ def with_openstack_resource(class_decl,
                         return
                 # run action
                 kwargs['openstack_resource'] = resource
-                func(**kwargs)
+                return func(**kwargs)
+            except EXCEPTIONS as errors:
+                _, _, tb = sys.exc_info()
+                raise NonRecoverableError(
+                    'Failure while trying to run operation:'
+                    '{0}: {1}'.format(operation_name, errors.message),
+                    causes=[exception_to_error_cause(errors, tb)])
+            finally:
                 update_runtime_properties_for_operation_task(operation_name,
                                                              ctx_node,
                                                              resource)
@@ -117,13 +124,6 @@ def with_openstack_resource(class_decl,
                     CLOUDIFY_UPDATE_PROJECT_OPERATION,
                     CLOUDIFY_UPDATE_OPERATION
                 ])
-
-            except EXCEPTIONS as errors:
-                _, _, tb = sys.exc_info()
-                raise NonRecoverableError(
-                    'Failure while trying to run operation:'
-                    '{0}: {1}'.format(operation_name, errors.message),
-                    causes=[exception_to_error_cause(errors, tb)])
         return wrapper_inner
     return wrapper_outer
 
@@ -150,9 +150,10 @@ def with_compat_node(func):
 
         if not kwargs_config:
             kwargs_config = kwargs
-        func(**kwargs_config)
-
-        update_runtime_properties_for_node_v2(ctx_node, kwargs_config)
+        try:
+            return func(**kwargs_config)
+        finally:
+            update_runtime_properties_for_node_v2(ctx_node, kwargs_config)
     return operation(func=wrapper, resumable=True)
 
 
