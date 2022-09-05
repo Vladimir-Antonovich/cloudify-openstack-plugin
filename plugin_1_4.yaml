@@ -834,8 +834,12 @@ node_types:
       cloudify.interfaces.lifecycle:
         create:
           implementation: openstack.openstack_plugin.resources.network.subnet.create
+        poststart:
+          implementation: openstack.openstack_plugin.resources.network.subnet.poststart
         delete:
           implementation: openstack.openstack_plugin.resources.network.subnet.delete
+        check_drift:
+          implementation: openstack.openstack_plugin.resources.network.subnet.check_drift
       cloudify.interfaces.validation:
         creation:
           implementation: openstack.openstack_plugin.resources.network.subnet.creation_validation

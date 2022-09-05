@@ -80,6 +80,19 @@ def delete(openstack_resource):
 
 @with_compat_node
 @with_openstack_resource(OpenstackNetwork)
+def check_drift(openstack_resource):
+    """
+    This method is to check drift of configuration
+    :param openstack_resource: Instance of current openstack network
+    """
+    ctx.instance.runtime_properties['remote_configuration'] = \
+        openstack_resource.get()
+    ctx.instance.update()
+    return utils.check_drift(ctx.logger, openstack_resource)
+
+
+@with_compat_node
+@with_openstack_resource(OpenstackNetwork)
 def update(openstack_resource, args):
     """
     Update openstack network by passing args dict that contains the info that
@@ -113,16 +126,3 @@ def creation_validation(openstack_resource):
     """
     validate_resource_quota(openstack_resource, NETWORK_OPENSTACK_TYPE)
     ctx.logger.debug('OK: network configuration is valid')
-
-
-@with_compat_node
-@with_openstack_resource(OpenstackNetwork)
-def check_drift(openstack_resource):
-    """
-    This method is to check drift of configuration
-    :param openstack_resource: Instance of current openstack network
-    """
-    ctx.instance.runtime_properties['remote_configuration'] = \
-        openstack_resource.get()
-    ctx.instance.update()
-    return utils.check_drift(ctx.logger, openstack_resource)
