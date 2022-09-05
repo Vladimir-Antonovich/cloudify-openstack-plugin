@@ -19,7 +19,8 @@ from cloudify.exceptions import NonRecoverableError
 
 # Local imports
 from openstack_plugin import utils
-from openstack_sdk.resources.networks import OpenstackSubnet
+from openstack_sdk.resources.networks import (OpenstackSubnet,
+                                             OpenstackNetwork)
 from openstack_plugin.decorators import (with_openstack_resource,
                                          with_compat_node,
                                          with_multiple_data_sources)
@@ -155,6 +156,8 @@ def update(openstack_resource, args):
     """
     args = reset_dict_empty_keys(args)
     openstack_resource.update(args)
+    ctx.instance.runtime_properties['expected_configuration'] = \
+        openstack_resource.get()
 
 
 @with_compat_node

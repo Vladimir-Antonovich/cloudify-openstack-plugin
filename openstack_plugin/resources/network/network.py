@@ -102,6 +102,8 @@ def update(openstack_resource, args):
     """
     args = reset_dict_empty_keys(args)
     openstack_resource.update(args)
+    ctx.instance.runtime_properties['expected_configuration'] = \
+        openstack_resource.get()
 
 
 @with_compat_node

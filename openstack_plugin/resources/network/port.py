@@ -20,6 +20,7 @@ from cloudify.exceptions import NonRecoverableError
 from IPy import IP
 
 # Local imports
+from openstack_plugin import utils
 from openstack_sdk.resources.networks import OpenstackPort
 from openstack_sdk.resources.compute import OpenstackServer
 from openstack_plugin.decorators import (with_openstack_resource,
@@ -346,6 +347,17 @@ def create(openstack_resource):
 
 
 @with_compat_node
+@with_openstack_resource(OpenstackPort)
+def poststart(openstack_resource):
+    """
+    Get qurrent status of openstack network for check_drift
+    :param openstack_resource: instance of openstack network resource
+    """
+    ctx.instance.runtime_properties['expected_configuration'] = \
+        openstack_resource.get()
+
+
+@with_compat_node
 @with_openstack_resource(
     OpenstackPort,
     existing_resource_handler=_clean_addresses_from_external_port)
@@ -359,6 +371,19 @@ def delete(openstack_resource):
 
 @with_compat_node
 @with_openstack_resource(OpenstackPort)
+def check_drift(openstack_resource):
+    """
+    This method is to check drift of configuration
+    :param openstack_resource: Instance of current openstack network
+    """
+    ctx.instance.runtime_properties['remote_configuration'] = \
+        openstack_resource.get()
+    ctx.instance.update()
+    return utils.check_drift(ctx.logger, openstack_resource)
+
+
+@with_compat_node
+@with_openstack_resource(OpenstackPort)
 def update(openstack_resource, args):
     """
     Update openstack port by passing args dict that contains the info that
@@ -368,6 +393,8 @@ def update(openstack_resource, args):
     """
     args = reset_dict_empty_keys(args)
     openstack_resource.update(args)
+    ctx.instance.runtime_properties['expected_configuration'] = \
+        openstack_resource.get()
 
 
 @with_compat_node

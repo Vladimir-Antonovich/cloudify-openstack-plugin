@@ -880,8 +880,12 @@ node_types:
       cloudify.interfaces.lifecycle:
         create:
           implementation: openstack.openstack_plugin.resources.network.port.create
+        poststart:
+          implementation: openstack.openstack_plugin.resources.network.port.poststart
         delete:
           implementation: openstack.openstack_plugin.resources.network.port.delete
+        check_drift:
+          implementation: openstack.openstack_plugin.resources.network.port.check_drift
       cloudify.interfaces.validation:
         creation:
           implementation: openstack.openstack_plugin.resources.network.port.creation_validation
