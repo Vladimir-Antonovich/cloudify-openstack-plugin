@@ -971,8 +971,12 @@ node_types:
       cloudify.interfaces.lifecycle:
         create:
           implementation: openstack.openstack_plugin.resources.network.floating_ip.create
+        poststart:
+          implementation: openstack.openstack_plugin.resources.network.floating_ip.poststart
         delete:
           implementation: openstack.openstack_plugin.resources.network.floating_ip.delete
+        check_drift:
+          implementation: openstack.openstack_plugin.resources.network.floating_ip.check_drift
       cloudify.interfaces.validation:
         creation:
           implementation: openstack.openstack_plugin.resources.network.floating_ip.creation_validation

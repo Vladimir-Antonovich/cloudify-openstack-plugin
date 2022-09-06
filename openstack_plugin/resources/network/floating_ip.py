@@ -18,6 +18,7 @@ from cloudify import ctx
 from cloudify.exceptions import (RecoverableError, NonRecoverableError)
 
 # Local imports
+from openstack_plugin import utils
 from openstack_sdk.resources.networks import (OpenstackFloatingIP,
                                               OpenstackNetwork)
 
@@ -236,12 +237,36 @@ def create(openstack_resource):
 
 @with_compat_node
 @with_openstack_resource(OpenstackFloatingIP)
+def poststart(openstack_resource):
+    """
+    Get qurrent status of openstack network for check_drift
+    :param openstack_resource: instance of openstack network resource
+    """
+    ctx.instance.runtime_properties['expected_configuration'] = \
+        openstack_resource.get()
+
+
+@with_compat_node
+@with_openstack_resource(OpenstackFloatingIP)
 def delete(openstack_resource):
     """
     Delete current openstack floating ip
     :param openstack_resource: Instance of openstack floating ip resource
     """
     openstack_resource.delete()
+
+
+@with_compat_node
+@with_openstack_resource(OpenstackFloatingIP)
+def check_drift(openstack_resource):
+    """
+    This method is to check drift of configuration
+    :param openstack_resource: Instance of current openstack network
+    """
+    ctx.instance.runtime_properties['remote_configuration'] = \
+        openstack_resource.get()
+    ctx.instance.update()
+    return utils.check_drift(ctx.logger, openstack_resource)
 
 
 @with_compat_node
@@ -258,6 +283,8 @@ def update(openstack_resource, args):
     # set to None in order to set it, so it is required to change '' to None
     new_config = reset_dict_empty_keys(args)
     openstack_resource.update(new_config)
+    ctx.instance.runtime_properties['expected_configuration'] = \
+        openstack_resource.get()
 
 
 @with_compat_node
