@@ -18,6 +18,7 @@ from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 
 # Local imports
+from openstack_plugin import utils
 from openstack_sdk.resources.networks import (OpenstackRouter,
                                               OpenstackPort,
                                               OpenstackNetwork)
@@ -227,6 +228,8 @@ def update(openstack_resource, args):
     """
     args = reset_dict_empty_keys(args)
     openstack_resource.update(args)
+    ctx.instance.runtime_properties['expected_configuration'] = \
+        openstack_resource.get()
 
 
 @with_compat_node
@@ -266,6 +269,8 @@ def add_interface_to_router(openstack_resource, **kwargs):
     router and these configuration are subnet_id, port_id
     """
     openstack_resource.add_interface(kwargs)
+    ctx.instance.runtime_properties['expected_configuration'] = \
+        openstack_resource.get()
 
 
 @with_compat_node
@@ -281,6 +286,8 @@ def remove_interface_from_router(openstack_resource, **kwargs):
     router and these configuration are subnet_id, port_id
     """
     openstack_resource.remove_interface(kwargs)
+    ctx.instance.runtime_properties['expected_configuration'] = \
+        openstack_resource.get()
 
 
 @with_compat_node
@@ -298,6 +305,17 @@ def start(openstack_resource, **kwargs):
         routes = dict()
         routes['routes'] = kwargs['routes']
         openstack_resource.update(routes)
+
+
+@with_compat_node
+@with_openstack_resource(OpenstackRouter)
+def poststart(openstack_resource):
+    """
+    Get qurrent status of openstack network for check_drift
+    :param openstack_resource: instance of openstack network resource
+    """
+    ctx.instance.runtime_properties['expected_configuration'] = \
+        openstack_resource.get()
 
 
 @with_compat_node
@@ -326,3 +344,16 @@ def stop(openstack_resource):
         routes = dict()
         routes['routes'] = updated_routes
         openstack_resource.update(routes)
+
+
+@with_compat_node
+@with_openstack_resource(OpenstackRouter)
+def check_drift(openstack_resource):
+    """
+    This method is to check drift of configuration
+    :param openstack_resource: Instance of current openstack network
+    """
+    ctx.instance.runtime_properties['remote_configuration'] = \
+        openstack_resource.get()
+    ctx.instance.update()
+    return utils.check_drift(ctx.logger, openstack_resource)

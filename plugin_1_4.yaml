@@ -926,10 +926,14 @@ node_types:
           inputs:
             routes:
               default: []
+        poststart:
+          implementation: openstack.openstack_plugin.resources.network.router.poststart
         stop:
           implementation: openstack.openstack_plugin.resources.network.router.stop
         delete:
           implementation: openstack.openstack_plugin.resources.network.router.delete
+        check_drift:
+          implementation: openstack.openstack_plugin.resources.network.router.check_drift
       cloudify.interfaces.validation:
         creation:
           implementation: openstack.openstack_plugin.resources.network.router.creation_validation
