@@ -18,7 +18,6 @@ from cloudify import ctx
 from cloudify.exceptions import NonRecoverableError
 
 # Local imports
-from openstack_plugin import utils
 from openstack_sdk.resources.networks import OpenstackNetwork
 from openstack_plugin.decorators import (with_openstack_resource,
                                          with_compat_node)
@@ -26,7 +25,8 @@ from openstack_plugin.decorators import (with_openstack_resource,
 from openstack_plugin.constants import RESOURCE_ID
 from openstack_plugin.utils import (validate_resource_quota,
                                     reset_dict_empty_keys,
-                                    add_resource_list_to_runtime_properties)
+                                    add_resource_list_to_runtime_properties,
+                                    drift_state)
 
 from openstack_plugin.constants import NETWORK_OPENSTACK_TYPE
 
@@ -88,7 +88,7 @@ def check_drift(openstack_resource):
     ctx.instance.runtime_properties['remote_configuration'] = \
         openstack_resource.get()
     ctx.instance.update()
-    return utils.check_drift(ctx.logger, openstack_resource)
+    return drift_state(ctx.logger, openstack_resource)
 
 
 @with_compat_node

@@ -18,7 +18,6 @@ from cloudify import ctx
 from cloudify.exceptions import (RecoverableError, NonRecoverableError)
 
 # Local imports
-from openstack_plugin import utils
 from openstack_sdk.resources.networks import (OpenstackFloatingIP,
                                               OpenstackNetwork)
 
@@ -35,7 +34,8 @@ from openstack_plugin.utils import (
     reset_dict_empty_keys,
     validate_resource_quota,
     add_resource_list_to_runtime_properties,
-    find_openstack_ids_of_connected_nodes_by_openstack_type)
+    find_openstack_ids_of_connected_nodes_by_openstack_type,
+    drift_state)
 
 
 def use_external_floating_ip(openstack_resource):
@@ -266,7 +266,7 @@ def check_drift(openstack_resource):
     ctx.instance.runtime_properties['remote_configuration'] = \
         openstack_resource.get()
     ctx.instance.update()
-    return utils.check_drift(ctx.logger, openstack_resource)
+    return drift_state(ctx.logger, openstack_resource)
 
 
 @with_compat_node

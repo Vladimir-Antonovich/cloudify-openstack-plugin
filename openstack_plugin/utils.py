@@ -1260,7 +1260,7 @@ def update_remote_configuration(openstack_resource, runtime_props):
                                 runtime_props)
 
 
-def check_drift(logger, openstack_resource):
+def drift_state(logger, openstack_resource):
     logger.info(
         'Checking drift state for {resource_id}.'.format(
             resource_id=openstack_resource.resource_id))
