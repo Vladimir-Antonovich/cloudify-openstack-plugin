@@ -17,6 +17,7 @@
 from cloudify import ctx
 
 # Local imports
+from openstack_plugin import utils
 from openstack_sdk.resources.networks import OpenstackSecurityGroup
 from openstack_sdk.resources.networks import OpenstackSecurityGroupRule
 
@@ -99,12 +100,36 @@ def configure(openstack_resource, security_group_rules=None):
 
 @with_compat_node
 @with_openstack_resource(OpenstackSecurityGroup)
+def poststart(openstack_resource):
+    """
+    Get qurrent status of openstack network for check_drift
+    :param openstack_resource: instance of openstack network resource
+    """
+    ctx.instance.runtime_properties['expected_configuration'] = \
+        openstack_resource.get()
+
+
+@with_compat_node
+@with_openstack_resource(OpenstackSecurityGroup)
 def delete(openstack_resource):
     """
     Delete current openstack security group instance
     :param openstack_resource: instance of openstack security group  resource
     """
     openstack_resource.delete()
+
+
+@with_compat_node
+@with_openstack_resource(OpenstackSecurityGroup)
+def check_drift(openstack_resource):
+    """
+    This method is to check drift of configuration
+    :param openstack_resource: Instance of current openstack network
+    """
+    ctx.instance.runtime_properties['remote_configuration'] = \
+        openstack_resource.get()
+    ctx.instance.update()
+    return utils.check_drift(ctx.logger, openstack_resource)
 
 
 @with_compat_node
@@ -118,6 +143,8 @@ def update(openstack_resource, args):
     """
     args = reset_dict_empty_keys(args)
     openstack_resource.update(args)
+    ctx.instance.runtime_properties['expected_configuration'] = \
+        openstack_resource.get()
 
 
 @with_compat_node
