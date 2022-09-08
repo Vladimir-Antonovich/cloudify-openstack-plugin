@@ -37,7 +37,8 @@ from openstack_plugin.utils import (reset_dict_empty_keys,
                                     merge_resource_config,
                                     validate_resource_quota,
                                     add_resource_list_to_runtime_properties,
-                                    find_relationships_by_relationship_type)
+                                    find_relationships_by_relationship_type,
+                                    drift_state)
 
 
 def _get_rbac_policy_target_from_relationship():
@@ -281,12 +282,36 @@ def create(openstack_resource, args={}):
 
 @with_compat_node
 @with_openstack_resource(OpenstackRBACPolicy)
+def poststart(openstack_resource):
+    """
+    Get qurrent status of openstack network for check_drift
+    :param openstack_resource: instance of openstack network resource
+    """
+    ctx.instance.runtime_properties['expected_configuration'] = \
+        openstack_resource.get()
+
+
+@with_compat_node
+@with_openstack_resource(OpenstackRBACPolicy)
 def delete(openstack_resource):
     """
     Delete current openstack rbac policy instance
     :param openstack_resource: instance of openstack srbac policy resource
     """
     openstack_resource.delete()
+
+
+@with_compat_node
+@with_openstack_resource(OpenstackNetwork)
+def check_drift(openstack_resource):
+    """
+    This method is to check drift of configuration
+    :param openstack_resource: Instance of current openstack network
+    """
+    ctx.instance.runtime_properties['remote_configuration'] = \
+        openstack_resource.get()
+    ctx.instance.update()
+    return drift_state(ctx.logger, openstack_resource)
 
 
 @with_compat_node
@@ -300,6 +325,8 @@ def update(openstack_resource, args):
     """
     args = reset_dict_empty_keys(args)
     openstack_resource.update(args)
+    ctx.instance.runtime_properties['expected_configuration'] = \
+        openstack_resource.get()
 
 
 @with_compat_node
@@ -397,7 +424,8 @@ def find_and_delete(openstack_resource,
             openstack_resource.resource_id = rbac_policy['id']
             openstack_resource.delete()
             return
-
+    ctx.instance.runtime_properties['expected_configuration'] = \
+        openstack_resource.get()
     ctx.logger.warn('No suitable RBAC policy found')
 
 

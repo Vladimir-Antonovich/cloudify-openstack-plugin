@@ -1089,8 +1089,12 @@ node_types:
           inputs:
             args:
               default: {}
+        poststart:
+          implementation: openstack.openstack_plugin.resources.network.rbac_policy.poststart
         delete:
           implementation: openstack.openstack_plugin.resources.network.rbac_policy.delete
+        check_drift:
+          implementation: openstack.openstack_plugin.resources.network.rbac_policy.check_drift
       cloudify.interfaces.validation:
         creation:
           implementation: openstack.openstack_plugin.resources.network.rbac_policy.creation_validation
