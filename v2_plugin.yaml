@@ -1056,8 +1056,12 @@ node_types:
       cloudify.interfaces.lifecycle:
         create:
           implementation: openstack.openstack_plugin.resources.network.security_group_rule.create
+        poststart:
+          implementation: openstack.openstack_plugin.resources.network.security_group_rule.poststart
         delete:
           implementation: openstack.openstack_plugin.resources.network.security_group_rule.delete
+        check_drift:
+          implementation: openstack.openstack_plugin.resources.network.security_group_rule.check_drift
       cloudify.interfaces.validation:
         creation:
           implementation: openstack.openstack_plugin.resources.network.security_group_rule.creation_validation
