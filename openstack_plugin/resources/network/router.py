@@ -269,7 +269,7 @@ def add_interface_to_router(openstack_resource, **kwargs):
     router and these configuration are subnet_id, port_id
     """
     openstack_resource.add_interface(kwargs)
-    ctx.instance.runtime_properties['expected_configuration'] = \
+    ctx.target.instance.runtime_properties['expected_configuration'] = \
         openstack_resource.get()
 
 
@@ -286,7 +286,7 @@ def remove_interface_from_router(openstack_resource, **kwargs):
     router and these configuration are subnet_id, port_id
     """
     openstack_resource.remove_interface(kwargs)
-    ctx.instance.runtime_properties['expected_configuration'] = \
+    ctx.target.instance.runtime_properties['expected_configuration'] = \
         openstack_resource.get()
 
 
@@ -353,6 +353,7 @@ def check_drift(openstack_resource):
     This method is to check drift of configuration
     :param openstack_resource: Instance of current openstack network
     """
+    ctx.instance.refresh()
     ctx.instance.runtime_properties['remote_configuration'] = \
         openstack_resource.get()
     ctx.instance.update()

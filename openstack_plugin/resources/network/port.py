@@ -376,6 +376,7 @@ def check_drift(openstack_resource):
     This method is to check drift of configuration
     :param openstack_resource: Instance of current openstack network
     """
+    ctx.instance.refresh()
     ctx.instance.runtime_properties['remote_configuration'] = \
         openstack_resource.get()
     ctx.instance.update()
