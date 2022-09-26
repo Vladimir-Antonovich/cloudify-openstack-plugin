@@ -1221,8 +1221,6 @@ class JsonCleanuper(object):
 
 def assign_parameter(openstack_resource, param_name, runtime_props, prop):
     prop = prop or {}
-    ctx.logger.debug("Runtime_props type: {}".format(type(runtime_props)))
-
     if prop:
         runtime_props[param_name] = JsonCleanuper(prop).to_dict()  # noqa
     elif isinstance(runtime_props, dict):
