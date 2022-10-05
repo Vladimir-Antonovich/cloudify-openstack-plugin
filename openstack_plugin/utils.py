@@ -24,6 +24,7 @@ import re
 
 # Third part imports
 import openstack.exceptions
+from munch import Munch
 from openstack._log import setup_logging
 from IPy import IP
 from cloudify import compute
@@ -1180,7 +1181,10 @@ class JsonCleanuper(object):
 
     def __init__(self, ob):
         try:
-            resource = ob.to_dict()
+            if isinstance(ob, Munch):
+                resource = ob.toDict()
+            else:
+                resource = ob.to_dict()
         except AttributeError:
             resource = ob
 
@@ -1188,7 +1192,6 @@ class JsonCleanuper(object):
             self._cleanuped_list(resource)
         elif isinstance(resource, dict):
             self._cleanuped_dict(resource)
-
         self.value = resource
 
     def _cleanuped_list(self, resource):
@@ -1197,6 +1200,8 @@ class JsonCleanuper(object):
                 continue
             if isinstance(v, list):
                 self._cleanuped_list(v)
+            elif isinstance(v, Munch):
+                resource[k] = v.toDict()
             elif isinstance(v, dict):
                 self._cleanuped_dict(v)
             elif (not isinstance(v, int) and  # integer and bool
@@ -1209,6 +1214,8 @@ class JsonCleanuper(object):
                 continue
             if isinstance(resource[k], list):
                 self._cleanuped_list(resource[k])
+            elif isinstance(resource[k], Munch):
+                resource[k] = resource[k].toDict()
             elif isinstance(resource[k], dict):
                 self._cleanuped_dict(resource[k])
             elif (not isinstance(resource[k], int) and  # integer and bool
@@ -1262,12 +1269,13 @@ def drift_state(logger, openstack_resource):
     logger.info(
         'Checking drift state for {resource_id}.'.format(
             resource_id=openstack_resource.resource_id))
+    ctx.instance.refresh()
+    runtime_properties = ctx.instance.runtime_properties.copy()
+    update_expected_configuration(openstack_resource, runtime_properties)
 
-    update_expected_configuration(openstack_resource,
-                                  ctx.instance.runtime_properties)
-    update_remote_configuration(openstack_resource,
-                                ctx.instance.runtime_properties)
-
+    current_configuration = lookup_remote_resource(ctx, openstack_resource)
+    runtime_properties["remote_configuration"] = current_configuration
+    update_remote_configuration(openstack_resource, runtime_properties)
     result = openstack_resource.compare_configuration()
     if result:
         logger.error(
