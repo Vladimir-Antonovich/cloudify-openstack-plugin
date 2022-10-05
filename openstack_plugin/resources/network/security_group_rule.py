@@ -14,16 +14,19 @@
 # limitations under the License.
 
 # Third party imports
+# from abc import update_abstractmethods
 from cloudify import ctx
 
 # Local imports
 from openstack_sdk.resources.networks import OpenstackSecurityGroupRule
+from openstack_sdk.resources.networks import OpenstackSecurityGroup
 from openstack_plugin.decorators import with_openstack_resource
 from openstack_plugin.constants import (RESOURCE_ID,
                                         SECURITY_GROUP_RULE_OPENSTACK_TYPE)
 from openstack_plugin.utils import (validate_resource_quota,
                                     add_resource_list_to_runtime_properties,
-                                    drift_state)
+                                    drift_state,
+                                    find_relationship_by_node_type)
 
 
 @with_openstack_resource(OpenstackSecurityGroupRule)
@@ -45,6 +48,7 @@ def poststart(openstack_resource):
     """
     ctx.instance.runtime_properties['expected_configuration'] = \
         openstack_resource.get()
+    update_secgroup_expected_configuration(ctx)
 
 
 @with_openstack_resource(OpenstackSecurityGroupRule)
@@ -92,3 +96,23 @@ def creation_validation(openstack_resource):
     validate_resource_quota(openstack_resource,
                             SECURITY_GROUP_RULE_OPENSTACK_TYPE)
     ctx.logger.debug('OK: security group rule configuration is valid')
+
+
+def update_secgroup_expected_configuration(ctx):
+    rel = find_relationship_by_node_type(
+        ctx.instance,
+        "cloudify.nodes.openstack.SecurityGroup")
+    if rel:
+        ctx.logger.info(
+            "Updating expected_configuration for {}".format(
+                rel.target.instance.id))
+        secgroup_id = rel.target.instance.runtime_properties.get('id')
+        client_config = ctx.node.properties.get('client_config')
+
+        security_group = \
+            OpenstackSecurityGroup(client_config=client_config,
+                                   logger=ctx.logger)
+        result = security_group.find_security_group(secgroup_id)
+
+        rel.target.instance.runtime_properties['expected_configuration'] = \
+            result

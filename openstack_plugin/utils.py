@@ -1273,7 +1273,7 @@ def drift_state(logger, openstack_resource):
     runtime_properties = ctx.instance.runtime_properties.copy()
     update_expected_configuration(openstack_resource, runtime_properties)
 
-    current_configuration = lookup_remote_resource(ctx, openstack_resource)
+    current_configuration = openstack_resource.get()
     runtime_properties["remote_configuration"] = current_configuration
     update_remote_configuration(openstack_resource, runtime_properties)
     result = openstack_resource.compare_configuration()
