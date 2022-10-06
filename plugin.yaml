@@ -1929,3 +1929,12 @@ relationships:
   cloudify.relationships.openstack.network_share_connected_to_subnet:
     # Determines the value of source node's resource_config.neutron_net_id parameter.
     derived_from: cloudify.relationships.connected_to
+
+  cloudify.relationships.openstack.rule_contained_in_secgroup:
+    derived_from: cloudify.relationships.contained_in
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        establish:
+          implementation: openstack.openstack_plugin.resources.network.security_group_rule.establish
+        unlink:
+          implementation: openstack.openstack_plugin.resources.network.security_group_rule.unlink

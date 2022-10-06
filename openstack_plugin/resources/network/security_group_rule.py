@@ -25,8 +25,7 @@ from openstack_plugin.constants import (RESOURCE_ID,
                                         SECURITY_GROUP_RULE_OPENSTACK_TYPE)
 from openstack_plugin.utils import (validate_resource_quota,
                                     add_resource_list_to_runtime_properties,
-                                    drift_state,
-                                    find_relationship_by_node_type)
+                                    drift_state)
 
 
 @with_openstack_resource(OpenstackSecurityGroupRule)
@@ -46,9 +45,9 @@ def poststart(openstack_resource):
     Get qurrent status of openstack network for check_drift
     :param openstack_resource: instance of openstack network resource
     """
+    ctx.logger.debug("Set expected configuration")
     ctx.instance.runtime_properties['expected_configuration'] = \
         openstack_resource.get()
-    update_secgroup_expected_configuration(ctx)
 
 
 @with_openstack_resource(OpenstackSecurityGroupRule)
@@ -98,21 +97,25 @@ def creation_validation(openstack_resource):
     ctx.logger.debug('OK: security group rule configuration is valid')
 
 
+@with_openstack_resource(OpenstackSecurityGroupRule)
+def establish(openstack_resource):
+    update_secgroup_expected_configuration(ctx)
+
+
+@with_openstack_resource(OpenstackSecurityGroupRule)
+def unlink(openstack_resource):
+    update_secgroup_expected_configuration(ctx)
+
+
 def update_secgroup_expected_configuration(ctx):
-    rel = find_relationship_by_node_type(
-        ctx.instance,
-        "cloudify.nodes.openstack.SecurityGroup")
-    if rel:
-        ctx.logger.info(
-            "Updating expected_configuration for {}".format(
-                rel.target.instance.id))
-        secgroup_id = rel.target.instance.runtime_properties.get('id')
-        client_config = ctx.node.properties.get('client_config')
-
-        security_group = \
-            OpenstackSecurityGroup(client_config=client_config,
-                                   logger=ctx.logger)
-        result = security_group.find_security_group(secgroup_id)
-
-        rel.target.instance.runtime_properties['expected_configuration'] = \
-            result
+    ctx.logger.debug(
+        "Updating expected_configuration for {}".format(ctx.target.instance.id)
+        )
+    secgroup_id = ctx.target.instance.runtime_properties.get('id')
+    client_config = ctx.target.node.properties.get('client_config')
+    security_group = \
+        OpenstackSecurityGroup(client_config=client_config,
+                               logger=ctx.logger)
+    result = security_group.find_security_group(secgroup_id)
+    ctx.target.instance.runtime_properties['expected_configuration'] = \
+        result
