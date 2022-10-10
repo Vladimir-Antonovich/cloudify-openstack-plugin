@@ -20,7 +20,8 @@ from cloudify.exceptions import NonRecoverableError
 # Local imports
 from openstack_sdk.resources.networks import (OpenstackRouter,
                                               OpenstackPort,
-                                              OpenstackNetwork)
+                                              OpenstackNetwork,
+                                              OpenstackSubnet)
 
 from openstack_plugin.decorators import (with_openstack_resource,
                                          with_compat_node)
@@ -187,6 +188,25 @@ def _handle_disconnect_external_subnet_from_router():
                     'subnet and router are being used')
 
 
+def _update_port_expected_configuration(ctx, ids):
+    ctx.logger.debug(
+        "Updating expected_configuration for {}".format(ctx.source.instance.id)
+        )
+    client_config = ctx.source.node.properties.get('client_config')
+    if ids['port_id']:
+        resource = \
+            OpenstackPort(client_config=client_config,
+                          logger=ctx.logger)
+        result = resource.find_port(ids['port_id'])
+    if ids['subnet_id']:
+        resource = \
+            OpenstackSubnet(client_config=client_config,
+                            logger=ctx.logger)
+        result = resource.find_subnet(ids['subnet_id'])
+    ctx.source.instance.runtime_properties['expected_configuration'] = \
+        result
+
+
 @with_compat_node
 @with_openstack_resource(
     OpenstackRouter,
@@ -271,6 +291,7 @@ def add_interface_to_router(openstack_resource, **kwargs):
     openstack_resource.add_interface(kwargs)
     ctx.target.instance.runtime_properties['expected_configuration'] = \
         openstack_resource.get()
+    _update_port_expected_configuration(ctx, kwargs)
 
 
 @with_compat_node
@@ -288,6 +309,7 @@ def remove_interface_from_router(openstack_resource, **kwargs):
     openstack_resource.remove_interface(kwargs)
     ctx.target.instance.runtime_properties['expected_configuration'] = \
         openstack_resource.get()
+    _update_port_expected_configuration(ctx)
 
 
 @with_compat_node

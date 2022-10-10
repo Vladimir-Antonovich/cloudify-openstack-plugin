@@ -99,15 +99,15 @@ def creation_validation(openstack_resource):
 
 @with_openstack_resource(OpenstackSecurityGroupRule)
 def establish(openstack_resource):
-    update_secgroup_expected_configuration(ctx)
+    _update_secgroup_expected_configuration(ctx)
 
 
 @with_openstack_resource(OpenstackSecurityGroupRule)
 def unlink(openstack_resource):
-    update_secgroup_expected_configuration(ctx)
+    _update_secgroup_expected_configuration(ctx)
 
 
-def update_secgroup_expected_configuration(ctx):
+def _update_secgroup_expected_configuration(ctx):
     ctx.logger.debug(
         "Updating expected_configuration for {}".format(ctx.target.instance.id)
         )
